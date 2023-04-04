@@ -1,0 +1,80 @@
+mport requests
+import gevent
+from _socket import gaierror, herror
+import gevent.socket as gevent_socket
+from gevent.util import wrap_errors
+
+def anagramas(palavra):
+    if len(palavra) == 1:
+        return palavra
+    elif len(palavra) < 1:
+        return ('palavra invalida')
+    else:
+        tmp = []
+        for aux in range(0, len(palavra)):
+            letra = palavra[aux]
+            palavra = palavra[0:aux] + palavra[aux+1:len(palavra)]
+            for i in range(len(palavra)+1):
+               if (i != (aux)) or (aux == 0):
+                tmp.append(palavra[0:i] + letra + palavra[i:len(palavra)])
+            tmp.append(palavra[0:i] + palavra[i:len(palavra)])
+            palavra = palavra[0:aux] + letra + palavra[aux:len(palavra)]
+        return tmp
+
+def validador_de_ip(dominio, timeout=0.1):
+    try:
+        #print ("linha 26")
+        ip = resolve_hostname(dominio, timeout)
+        if ip:
+            #print(ip)     
+            return True
+        else: 
+            #print("linha 32")
+            return False
+    except Exception as e:
+        #print(e)
+        return False
+    
+def resolve_hostname(hostname, timeout):
+    with gevent.Timeout(timeout, False):
+        try:
+            address= gevent_socket.gethostbyname(hostname)
+        except:
+            #pass
+            raise AssertionError('Timeout was not raised')
+
+    return address 
+
+
+palavra = input("Digite a palavra: ")
+lista_anagramas = anagramas(palavra)
+
+with open('lista_anagramas.txt', 'w') as f:
+    for item in lista_anagramas:
+        f.write("%s\n" % item)
+        #print(f"Anagrama escrito no arquivo: {item}")
+    
+anagramas_ativos = []
+extensoes = [".com",".com.br", ".org", ".net", ".xyz", ".name", ".biz", ".site", ".info", ".club", ".tech", ".online", ".pro", ".studio", ".agency", ".life", ".blog", ".cloud", ".app.br",".art.br",".coop.br",".fm.br",".g12.br",".gov.br",".mil.br",".org.br",".psi.br",".com.br", ".dev.br", ".eco.br", ".emp.br", ".log.br", ".net.br", ".ong.br", ".seg.br", ".tec.br", ".edu.br", ".blog.br", ".flog.br", ".nom.br", ".vlog.br", ".wiki.br", ".adm.br", ".adv.br", ".arq.br", ".ato.br", ".bib.br", ".bio.br", ".bmd.br", ".cim.br", ".cng.br", ".cnt.br", ".coz.br", ".des.br", ".det.br", ".ecn.br", ".enf.br", ".eng.br", ".eti.br", ".fnd.br", ".fot.br", ".fst.br", ".geo.br", ".ggf.br", ".jor.br", ".lel.br", ".mat.br", ".med.br", ".mus.br", ".not.br", ".ntr.br", ".odo.br", ".ppg.br", ".pro.br", ".psc.br", ".qsl.br", ".rep.br", ".slg.br", ".taxi.br", ".teo.br", ".trd.br", ".vet.br", ".zlb.br", ".agr.br", ".esp.br", ".etc.br", ".far.br", ".imb.br", ".ind.br", ".inf.br", ".radio.br", ".rec.br", ".srv.br", ".tmp.br", ".tur.br", ".tv.br", ".am.br"]
+for anagrama in lista_anagramas:
+        for extensao in extensoes:
+            dominio = anagrama + extensao
+            #print(f"dominio sendo analisado {dominio}")
+            if validador_de_ip(dominio):
+                print(f"testando dominio {dominio}")
+                try:
+                    response = requests.get(f'http://{dominio}', timeout=0.5)
+                    if response.status_code == 200:
+                        print(f"o dominio valido encontrado foi {dominio}")
+                        anagramas_ativos.append(dominio)
+                    else: 
+                        print(f"o dominio {dominio} respondeu invalido")
+                except Exception as e: #requests.exceptions.RequestException:
+                    print(f"o dominio {dominio} gerou excessao")
+                    #print("tratando a excessao")
+                    pass
+
+with open('lista_anagramas_ativos.txt', 'w') as f:
+    for item in anagramas_ativos:
+        f.write("%s\n" % item)
+        print(f"Anagrama ativo escrito no arquivo: {item}")
